@@ -200,4 +200,36 @@
     border-color: var(--color-accent) !important;
     color: var(--color-accent) !important;
   }
+
+  /* Interactive preview: make flowchart nodes clickable */
+  .interactive-preview .node {
+    cursor: pointer !important;
+    transition: filter 0.15s ease;
+  }
+
+  .interactive-preview .node:hover {
+    filter: brightness(1.2) drop-shadow(0 0 6px oklch(0.65 0.25 270 / 0.3));
+  }
+
+  .interactive-preview .node.node-selected > rect,
+  .interactive-preview .node.node-selected > polygon,
+  .interactive-preview .node.node-selected > circle,
+  .interactive-preview .node.node-selected > path,
+  .interactive-preview .node.node-selected .basic.label-container {
+    stroke: oklch(0.65 0.25 270) !important;
+    stroke-width: 3px !important;
+  }
+
+  .interactive-preview .node.node-selected {
+    filter: drop-shadow(0 0 10px oklch(0.65 0.25 270 / 0.5));
+  }
+
+  .node-edit-panel {
+    animation: panelAppear 0.15s ease forwards;
+  }
+
+  @keyframes panelAppear {
+    from { opacity: 0; transform: scale(0.95) translateY(4px); }
+    to { opacity: 1; transform: scale(1) translateY(0); }
+  }
 }

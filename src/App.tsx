@@ -84,7 +84,7 @@ export default function App() {
                     }
                     right={
                         <div className="h-full relative">
-                            <Preview svgOutput={svgOutput} isRendering={isRendering} />
+                            <Preview svgOutput={svgOutput} isRendering={isRendering} code={code} onCodeChange={handleCodeChange} />
                             {error && <ErrorToast message={error} />}
                         </div>
                     }
