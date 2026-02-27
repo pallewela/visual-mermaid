@@ -68,7 +68,9 @@ export function useMermaid({ code, isDark, handDrawn }: UseMermaidOptions): UseM
                     edgeLabelBackground: '#f1f5f9',
                     nodeTextColor: '#1e293b',
                 },
-            fontFamily: '"Inter", ui-sans-serif, system-ui, sans-serif',
+            fontFamily: handDrawn
+                ? '"Caveat", "Segoe Print", "Comic Sans MS", cursive'
+                : '"Inter", ui-sans-serif, system-ui, sans-serif',
             flowchart: { htmlLabels: true, curve: 'basis' },
             sequence: { mirrorActors: false },
         })
