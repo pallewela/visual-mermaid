@@ -3,11 +3,19 @@ import { Maximize2, Plus, Link } from 'lucide-react'
 import { useTheme } from '../context/ThemeContext'
 import NodeEditPanel from './NodeEditPanel'
 import {
-    isFlowchart,
-    extractNodeIdFromElement,
     addNode as addNodeToCode,
     addEdge as addEdgeToCode,
+    extractNodeIdFromElement,
 } from '../utils/flowchartParser'
+import {
+    detectChartType,
+    isInteractiveType,
+    findClickedElement,
+    extractElementInfo,
+    getCapabilities,
+    getSelectableSelector,
+    type ElementInfo,
+} from '../utils/diagramEditor'
 
 interface PreviewProps {
     svgOutput: string
@@ -30,14 +38,17 @@ export default function Preview({
     const lastPos = useRef({ x: 0, y: 0 })
     const dragStartPos = useRef({ x: 0, y: 0 })
     const didDrag = useRef(false)
-    const clickedNodeRef = useRef<string | null>(null)
+    const clickedElementRef = useRef<ElementInfo | null>(null)
 
     // Visual editing state
-    const [selectedNodeId, setSelectedNodeId] = useState<string | null>(null)
+    const [selectedElement, setSelectedElement] =
+        useState<ElementInfo | null>(null)
     const [popoverPos, setPopoverPos] = useState({ x: 0, y: 0 })
     const [connectingFrom, setConnectingFrom] = useState<string | null>(null)
 
-    const visualEditing = isFlowchart(code)
+    const chartType = detectChartType(code)
+    const isInteractive = isInteractiveType(chartType)
+    const caps = getCapabilities(chartType)
 
     // Prevent view reset during visual edits
     const skipResetRef = useRef(false)
@@ -62,30 +73,45 @@ export default function Preview({
         }
     }, [svgOutput, resetView])
 
-    // Apply selection highlight to SVG nodes after each render
+    // Apply selection highlight after each SVG render
     useEffect(() => {
         const container = svgContainerRef.current
-        if (!container || !visualEditing) return
+        if (!container || !isInteractive) return
 
         container
-            .querySelectorAll('.node.node-selected')
-            .forEach((el) => el.classList.remove('node-selected'))
+            .querySelectorAll('.element-selected')
+            .forEach((el) => el.classList.remove('element-selected'))
 
-        if (selectedNodeId) {
-            container.querySelectorAll('.node').forEach((node) => {
-                const id = extractNodeIdFromElement(node)
-                if (id === selectedNodeId) {
-                    node.classList.add('node-selected')
-                }
-            })
+        if (!selectedElement) return
+
+        if (chartType === 'flowchart') {
+            container
+                .querySelectorAll('.node, .rough-node')
+                .forEach((node) => {
+                    const id = extractNodeIdFromElement(node)
+                    if (id === selectedElement.id) {
+                        node.classList.add('element-selected')
+                    }
+                })
+        } else {
+            const selector = getSelectableSelector(chartType)
+            if (selector) {
+                container.querySelectorAll(selector).forEach((el) => {
+                    const textEl = el.querySelector('text')
+                    const text = textEl?.textContent?.trim()
+                    if (text === selectedElement.id) {
+                        el.classList.add('element-selected')
+                    }
+                })
+            }
         }
-    }, [svgOutput, selectedNodeId, visualEditing])
+    }, [svgOutput, selectedElement, isInteractive, chartType])
 
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key === 'Escape') {
-                setSelectedNodeId(null)
+                setSelectedElement(null)
                 setConnectingFrom(null)
             }
         }
@@ -93,13 +119,11 @@ export default function Preview({
         return () => window.removeEventListener('keydown', handleKeyDown)
     }, [])
 
-    // Deselect when diagram type changes to non-flowchart
+    // Deselect when chart type changes
     useEffect(() => {
-        if (!visualEditing) {
-            setSelectedNodeId(null)
-            setConnectingFrom(null)
-        }
-    }, [visualEditing])
+        setSelectedElement(null)
+        setConnectingFrom(null)
+    }, [chartType])
 
     const handleWheel = useCallback((e: React.WheelEvent) => {
         e.preventDefault()
@@ -116,15 +140,19 @@ export default function Preview({
 
             dragStartPos.current = { x: e.clientX, y: e.clientY }
             didDrag.current = false
-            clickedNodeRef.current = null
+            clickedElementRef.current = null
 
-            if (visualEditing) {
+            if (isInteractive) {
                 const target = e.target as Element
-                const nodeElement = target.closest('.node')
-                if (nodeElement) {
-                    const nodeId = extractNodeIdFromElement(nodeElement)
-                    if (nodeId) {
-                        clickedNodeRef.current = nodeId
+                const clickedEl = findClickedElement(target, chartType)
+                if (clickedEl) {
+                    const info = extractElementInfo(
+                        clickedEl,
+                        chartType,
+                        code
+                    )
+                    if (info) {
+                        clickedElementRef.current = info
                     }
                 }
             }
@@ -132,7 +160,7 @@ export default function Preview({
             isPanning.current = true
             lastPos.current = { x: e.clientX, y: e.clientY }
         },
-        [visualEditing]
+        [isInteractive, chartType, code]
     )
 
     const handleMouseMove = useCallback(
@@ -162,29 +190,36 @@ export default function Preview({
         (e: React.MouseEvent<HTMLDivElement>) => {
             isPanning.current = false
 
-            if (!didDrag.current && visualEditing) {
-                if (clickedNodeRef.current) {
-                    if (connectingFrom) {
-                        if (connectingFrom !== clickedNodeRef.current) {
+            if (!didDrag.current && isInteractive) {
+                const clicked = clickedElementRef.current
+                if (clicked) {
+                    if (connectingFrom && chartType === 'flowchart') {
+                        if (connectingFrom !== clicked.id) {
                             const updated = addEdgeToCode(
                                 code,
                                 connectingFrom,
-                                clickedNodeRef.current
+                                clicked.id
                             )
                             onVisualCodeChange(updated)
                         }
                         setConnectingFrom(null)
                     } else {
-                        setSelectedNodeId(clickedNodeRef.current)
+                        setSelectedElement(clicked)
                         setPopoverPos({ x: e.clientX, y: e.clientY })
                     }
                 } else {
-                    setSelectedNodeId(null)
+                    setSelectedElement(null)
                     setConnectingFrom(null)
                 }
             }
         },
-        [visualEditing, connectingFrom, code, onVisualCodeChange]
+        [
+            isInteractive,
+            connectingFrom,
+            chartType,
+            code,
+            onVisualCodeChange,
+        ]
     )
 
     const handleMouseLeave = useCallback(() => {
@@ -197,22 +232,22 @@ export default function Preview({
     }, [code, onVisualCodeChange])
 
     const handleStartConnect = useCallback(() => {
-        if (selectedNodeId) {
-            setConnectingFrom(selectedNodeId)
-            setSelectedNodeId(null)
+        if (selectedElement) {
+            setConnectingFrom(selectedElement.id)
+            setSelectedElement(null)
         }
-    }, [selectedNodeId])
+    }, [selectedElement])
 
     const getCursor = () => {
         if (connectingFrom) return 'crosshair'
-        if (!visualEditing) return 'grab'
+        if (!isInteractive) return 'grab'
         return 'default'
     }
 
     return (
         <div
             className={`preview-container h-full w-full flex flex-col ${
-                visualEditing ? 'interactive-preview' : ''
+                isInteractive ? 'interactive-preview' : ''
             }`}
             style={{
                 backgroundColor: isDark ? '#0f1219' : '#f8fafc',
@@ -224,7 +259,7 @@ export default function Preview({
                     <span className="text-xs font-medium opacity-50 tracking-wide uppercase">
                         Preview
                     </span>
-                    {visualEditing && (
+                    {caps.canAdd && (
                         <>
                             <div
                                 className="w-px h-4"
@@ -321,13 +356,13 @@ export default function Preview({
                 </div>
             </div>
 
-            {/* Node edit panel (outside interaction area to avoid event conflicts) */}
-            {selectedNodeId && visualEditing && (
+            {/* Element edit panel */}
+            {selectedElement && isInteractive && (
                 <NodeEditPanel
-                    nodeId={selectedNodeId}
+                    elementInfo={selectedElement}
                     code={code}
                     onCodeChange={onVisualCodeChange}
-                    onClose={() => setSelectedNodeId(null)}
+                    onClose={() => setSelectedElement(null)}
                     onStartConnect={handleStartConnect}
                     position={popoverPos}
                 />

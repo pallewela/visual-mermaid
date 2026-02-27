@@ -192,6 +192,86 @@ export function addEdge(
     return code.trimEnd() + '\n' + newLine
 }
 
+function getNodeStyleProp(
+    code: string,
+    nodeId: string,
+    prop: string
+): string | null {
+    const eid = escapeRegex(nodeId)
+    const regex = new RegExp(
+        `style\\s+${eid}\\s+[^\\n]*?${prop}:([#\\w]+)`
+    )
+    const match = code.match(regex)
+    return match ? match[1] : null
+}
+
+function setNodeStyleProp(
+    code: string,
+    nodeId: string,
+    prop: string,
+    value: string | null
+): string {
+    const eid = escapeRegex(nodeId)
+    const styleRegex = new RegExp(`(\\n?\\s*style\\s+${eid}\\s+)(.+)`, 'm')
+    const match = code.match(styleRegex)
+
+    if (match) {
+        const props = match[2]
+            .split(',')
+            .map((p) => p.trim())
+            .filter((p) => p.length > 0 && !p.startsWith(`${prop}:`))
+
+        if (value) {
+            props.unshift(`${prop}:${value}`)
+        }
+
+        if (props.length === 0) {
+            return code.replace(
+                new RegExp(`\\n?\\s*style\\s+${eid}\\s+.+`, 'm'),
+                ''
+            )
+        }
+
+        return code.replace(styleRegex, `${match[1]}${props.join(',')}`)
+    }
+
+    if (value) {
+        return code.trimEnd() + `\n    style ${nodeId} ${prop}:${value}`
+    }
+
+    return code
+}
+
+export function getNodeFillColor(
+    code: string,
+    nodeId: string
+): string | null {
+    return getNodeStyleProp(code, nodeId, 'fill')
+}
+
+export function setNodeFillColor(
+    code: string,
+    nodeId: string,
+    color: string | null
+): string {
+    return setNodeStyleProp(code, nodeId, 'fill', color)
+}
+
+export function getNodeStrokeColor(
+    code: string,
+    nodeId: string
+): string | null {
+    return getNodeStyleProp(code, nodeId, 'stroke')
+}
+
+export function setNodeStrokeColor(
+    code: string,
+    nodeId: string,
+    color: string | null
+): string {
+    return setNodeStyleProp(code, nodeId, 'stroke', color)
+}
+
 export function getAllNodeIds(code: string): string[] {
     const ids = new Set<string>()
     const keywords = new Set([

@@ -1,16 +1,15 @@
 import { useCallback } from 'react'
-import {
-    ArrowDownUp,
-    ArrowLeftRight,
-    Pencil,
-} from 'lucide-react'
+import { ArrowDownUp, ArrowLeftRight, Pencil } from 'lucide-react'
 import { CHART_TEMPLATES } from '../templates'
+import { CLASSIC_FONTS, SKETCH_FONTS } from '../stylePresets'
 
 interface QuickActionsProps {
     code: string
     onCodeChange: (code: string) => void
     handDrawn: boolean
     onHandDrawnChange: (value: boolean) => void
+    fontName: string
+    onFontChange: (name: string) => void
 }
 
 export default function QuickActions({
@@ -18,6 +17,8 @@ export default function QuickActions({
     onCodeChange,
     handDrawn,
     onHandDrawnChange,
+    fontName,
+    onFontChange,
 }: QuickActionsProps) {
     const toggleDirection = useCallback(() => {
         const lines = code.split('\n')
@@ -50,7 +51,8 @@ export default function QuickActions({
 
     const detectCurrentType = (): string => {
         const first = code.trim().split('\n')[0].toLowerCase()
-        if (first.startsWith('flowchart') || first.startsWith('graph')) return 'flowchart'
+        if (first.startsWith('flowchart') || first.startsWith('graph'))
+            return 'flowchart'
         if (first.startsWith('sequencediagram')) return 'sequence'
         if (first.startsWith('gantt')) return 'gantt'
         if (first.startsWith('classdiagram')) return 'classDiagram'
@@ -60,6 +62,9 @@ export default function QuickActions({
         if (first.startsWith('mindmap')) return 'mindmap'
         return 'flowchart'
     }
+
+    const fontList = handDrawn ? SKETCH_FONTS : CLASSIC_FONTS
+    const currentFontOption = fontList.find((f) => f.name === fontName)
 
     return (
         <div className="flex items-center gap-2 flex-wrap">
@@ -102,6 +107,30 @@ export default function QuickActions({
                 <Pencil size={14} />
                 Sketch
             </button>
+
+            <div
+                className="w-px h-5 hidden sm:block"
+                style={{ background: 'oklch(0.5 0.02 260 / 0.2)' }}
+            />
+
+            {/* Font selector */}
+            <select
+                value={fontName}
+                onChange={(e) => onFontChange(e.target.value)}
+                className="glass-select"
+                style={{
+                    fontFamily: currentFontOption?.value,
+                    minWidth: 100,
+                }}
+                title="Diagram font"
+            >
+                {fontList.map((font) => (
+                    <option key={font.name} value={font.name}>
+                        {font.name}
+                    </option>
+                ))}
+            </select>
+
         </div>
     )
 }

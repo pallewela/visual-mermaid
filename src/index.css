@@ -201,27 +201,43 @@
     color: var(--color-accent) !important;
   }
 
-  /* Interactive preview: make flowchart nodes clickable */
-  .interactive-preview .node {
+  /* Interactive preview: make diagram elements clickable */
+  .interactive-preview .node,
+  .interactive-preview .rough-node,
+  .interactive-preview .actor,
+  .interactive-preview .classGroup,
+  .interactive-preview .statediagram-state,
+  .interactive-preview .stateGroup,
+  .interactive-preview .mindmap-node,
+  .interactive-preview [id^="entity-"] {
     cursor: pointer !important;
     transition: filter 0.15s ease;
   }
 
-  .interactive-preview .node:hover {
+  .interactive-preview .node:hover,
+  .interactive-preview .rough-node:hover,
+  .interactive-preview .actor:hover,
+  .interactive-preview .classGroup:hover,
+  .interactive-preview .statediagram-state:hover,
+  .interactive-preview .stateGroup:hover,
+  .interactive-preview .mindmap-node:hover,
+  .interactive-preview [id^="entity-"]:hover {
     filter: brightness(1.2) drop-shadow(0 0 6px oklch(0.65 0.25 270 / 0.3));
   }
 
-  .interactive-preview .node.node-selected > rect,
-  .interactive-preview .node.node-selected > polygon,
-  .interactive-preview .node.node-selected > circle,
-  .interactive-preview .node.node-selected > path,
-  .interactive-preview .node.node-selected .basic.label-container {
-    stroke: oklch(0.65 0.25 270) !important;
-    stroke-width: 3px !important;
+  .interactive-preview .element-selected {
+    filter: drop-shadow(0 0 10px oklch(0.65 0.25 270 / 0.5));
   }
 
-  .interactive-preview .node.node-selected {
-    filter: drop-shadow(0 0 10px oklch(0.65 0.25 270 / 0.5));
+  .interactive-preview .element-selected > rect,
+  .interactive-preview .element-selected > polygon,
+  .interactive-preview .element-selected > circle,
+  .interactive-preview .element-selected > path,
+  .interactive-preview .element-selected > ellipse,
+  .interactive-preview .element-selected .basic.label-container,
+  .interactive-preview rect.element-selected {
+    stroke: oklch(0.65 0.25 270) !important;
+    stroke-width: 3px !important;
   }
 
   .node-edit-panel {
@@ -231,5 +247,22 @@
   @keyframes panelAppear {
     from { opacity: 0; transform: scale(0.95) translateY(4px); }
     to { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .color-swatch,
+  .fill-swatch {
+    width: 16px;
+    height: 16px;
+    border-radius: 9999px;
+    border: none;
+    cursor: pointer;
+    transition: transform 0.15s ease, box-shadow 0.15s ease;
+    flex-shrink: 0;
+    padding: 0;
+  }
+
+  .color-swatch:hover,
+  .fill-swatch:hover {
+    transform: scale(1.2) !important;
   }
 }
