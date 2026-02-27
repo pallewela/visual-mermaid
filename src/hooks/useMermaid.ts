@@ -69,7 +69,7 @@ export function useMermaid({ code, isDark, handDrawn }: UseMermaidOptions): UseM
                     nodeTextColor: '#1e293b',
                 },
             fontFamily: handDrawn
-                ? '"Caveat", "Segoe Print", "Comic Sans MS", cursive'
+                ? '"Waiting for the Sunrise", "Caveat", "Segoe Print", "Comic Sans MS", cursive'
                 : '"Inter", ui-sans-serif, system-ui, sans-serif',
             flowchart: { htmlLabels: true, curve: 'basis' },
             sequence: { mirrorActors: false },
